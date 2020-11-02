@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fate.cafe","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="通过原生 JS 书写简单 ToDoList 并分析的方式，讲解了前端 MVC 的实现要点。 译自：Understanding MVC Services for the Front End: VanillaJS 作者：Carlos Caballero">
+<meta property="og:type" content="article">
+<meta property="og:title" content="理解前端 MVC：原生 JS">
+<meta property="og:url" content="https://fate.cafe/2020/11/02/%E7%90%86%E8%A7%A3%E5%89%8D%E7%AB%AF-MVC%EF%BC%9A%E5%8E%9F%E7%94%9F-JS/index.html">
+<meta property="og:site_name" content="月海">
+<meta property="og:description" content="通过原生 JS 书写简单 ToDoList 并分析的方式，讲解了前端 MVC 的实现要点。 译自：Understanding MVC Services for the Front End: VanillaJS 作者：Carlos Caballero">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fate.cafe/images/1_AdRdnVeheeydi2vrXepO-Q.gif">
+<meta property="og:image" content="https://fate.cafe/images/1_r_ZmYdFN389lWHXhVv0Lfg.png">
+<meta property="article:published_time" content="2020-11-02T03:56:05.000Z">
+<meta property="article:modified_time" content="2020-11-02T04:12:56.299Z">
+<meta property="article:author" content="月海">
+<meta property="article:tag" content="前端">
+<meta property="article:tag" content="MVC">
+<meta property="article:tag" content="翻译">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fate.cafe/images/1_AdRdnVeheeydi2vrXepO-Q.gif">
+
+<link rel="canonical" href="https://fate.cafe/2020/11/02/%E7%90%86%E8%A7%A3%E5%89%8D%E7%AB%AF-MVC%EF%BC%9A%E5%8E%9F%E7%94%9F-JS/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>理解前端 MVC：原生 JS | 月海</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">月海</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">天穹似深海，明月出其间</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fate.cafe/2020/11/02/%E7%90%86%E8%A7%A3%E5%89%8D%E7%AB%AF-MVC%EF%BC%9A%E5%8E%9F%E7%94%9F-JS/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="月海">
+      <meta itemprop="description" content="星斗绕河汉，诸命已定盘">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="月海">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          理解前端 MVC：原生 JS
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-11-02 11:56:05 / 修改时间：12:12:56" itemprop="dateCreated datePublished" datetime="2020-11-02T11:56:05+08:00">2020-11-02</time>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/11/02/%E7%90%86%E8%A7%A3%E5%89%8D%E7%AB%AF-MVC%EF%BC%9A%E5%8E%9F%E7%94%9F-JS/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/11/02/理解前端-MVC：原生-JS/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>通过原生 JS 书写简单 ToDoList 并分析的方式，讲解了前端 MVC 的实现要点。</p>
+<p>译自：<a target="_blank" rel="noopener" href="https://medium.com/better-programming/understanding-mvc-services-for-the-front-end-vanillajs-2268255b36e6">Understanding MVC Services for the Front End: VanillaJS</a></p>
+<p>作者：Carlos Caballero</p>
+<a id="more"></a>
+
+<h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h1><p>本文是“理解 MVC 架构如何创建前端应用”系列三篇文章的第一篇。该系列旨在通过“将 JS 脚本写的网页发展为 JS 应用”，来弄清楚如何组织前端应用程序。</p>
+<p>在第一篇文章中，将会使用原生 JS 来构建应用，因此 DOM 相关的代码占据较大篇幅。这对于理解应用的各个部分如何联系、整个应用如何组织，是非常重要的。</p>
+<p>在第二篇文章中，我们将会使用 TypeScript 重构来升级 JS 代码。</p>
+<p>最后一篇文章中，我们会把之前的代码使用 Angular 框架整合。</p>
+<h1 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h1><p>一图胜千言，下图是我们将要构建的应用。</p>
+<p><img src="/images/1_AdRdnVeheeydi2vrXepO-Q.gif" alt="img"></p>
+<p>当然，完全可以使用单个 JS 文件修改 DOM 来实现所有的操作。但是这样耦合性太强，也并非我们的目的。</p>
+<p>所谓 MVC，包含三个部分：</p>
+<ul>
+<li>Models 用于管理数据。因为在本项目中和 services 关联，所以会“贫血<sup>1</sup>(be anemic)”，不包含业务逻辑。</li>
+<li>Views 是 models 的可视化展现。</li>
+<li>Controllers 连接 services 和 views。</li>
+</ul>
+<p>下图是文件目录结构：</p>
+<p><img src="/images/1_r_ZmYdFN389lWHXhVv0Lfg.png" alt="img"></p>
+<p>index.html 将会作为一个“画布”，整个应用都会使用 “root” 元素，在上面动态生成。此外，所有其余文件（JS、CSS）将会引入其中。</p>
+<p>其他文件结构如下：</p>
+<ul>
+<li>user.model.js 包含“用户(user)”的属性。</li>
+<li>user.controller.js 负责整合 service 和 view。</li>
+<li>uer.service.js 负责“用户们(users)”的所有操作。</li>
+<li>user.view.js 负责渲染界面。</li>
+</ul>
+<p>HTML 文件如下：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">&quot;utf-8&quot;</span> /&gt;</span></span><br><span class="line">          ……</span><br><span class="line">    <span class="tag">&lt;<span class="name">title</span>&gt;</span>User App<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;root&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;models/user.model.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;services/user.service.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;controllers/user.controller.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;views/user.view.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;app.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="Models"><a href="#Models" class="headerlink" title="Models"></a>Models</h1><h2 id="Models-1"><a href="#Models-1" class="headerlink" title="Models"></a>Models</h2><p>首先构建的“类(class)”是应用的“模型(models)”，<code>user.model.js</code>。它由“类属性”以及一个生成随机 ID 的“私有方法”组成。</p>
+<p>models 包含以下字段：</p>
+<ul>
+<li>id 唯一值；</li>
+<li>name 用户名；</li>
+<li>age 用户年龄；</li>
+<li>complete 布尔值，用于表示用户是否被从列表中“划掉”。</li>
+</ul>
+<p><code>user.model.js</code>整体代码如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@class <span class="variable">Model</span></span></span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Manages the data of the application.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line">    <span class="keyword">constructor</span>(&#123; name, age, complete &#125; = &#123; <span class="attr">complete</span>: <span class="literal">false</span> &#125;) &#123;</span><br><span class="line">        <span class="built_in">this</span>.id = <span class="built_in">this</span>.uuidv4();</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.age = age;</span><br><span class="line">        <span class="built_in">this</span>.complete = complete;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    uuidv4() &#123;</span><br><span class="line">        <span class="keyword">return</span> ([<span class="number">1e7</span>] + <span class="number">-1e3</span> + <span class="number">-4e3</span> + <span class="number">-8e3</span> + <span class="number">-1e11</span>).replace(<span class="regexp">/[018]/g</span>, <span class="function"><span class="params">c</span> =&gt;</span></span><br><span class="line">            (</span><br><span class="line">                c ^</span><br><span class="line">                (crypto.getRandomValues(<span class="keyword">new</span> <span class="built_in">Uint8Array</span>(<span class="number">1</span>))[<span class="number">0</span>] &amp; (<span class="number">15</span> &gt;&gt; (c / <span class="number">4</span>)))</span><br><span class="line">            ).toString(<span class="number">16</span>)</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Services"><a href="#Services" class="headerlink" title="Services"></a>Services</h2><p><code>user.model.js</code>对于“用户们”的操作被拿到了 <code>user.service.js</code>中，service 包含了所有的逻辑负载，从而保证了 models 可以“贫血(to be anemic)”。</p>
+<p>service 中将会使用一个数组存储所有的用户，并且构建与“增、查、改、删(CRUD)”相关的四个方法。</p>
+<p>注意，service 通过 models ，将从<code>LocalStorage</code>中提取的对象变成了<code>User</code>类的实例。这是因为<code>LocalStorage</code>只能存储字符串类型的键值对，而不能存储对象结构<sup>2</sup>。</p>
+<p>service 中的构造函数如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">constructor</span>() &#123;</span><br><span class="line">    <span class="keyword">const</span> users = <span class="built_in">JSON</span>.parse(<span class="built_in">localStorage</span>.getItem(<span class="string">&#x27;users&#x27;</span>)) || [];</span><br><span class="line">    <span class="built_in">this</span>.users = users.map(<span class="function"><span class="params">user</span> =&gt;</span> <span class="keyword">new</span> User(user));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们定义了一个名为<code>users</code>的“类变量(a class variable)”。当数据从字符串转为 User 类的实例时<sup>3</sup>，<code>users</code>将存储所有的用户。</p>
+<p>下面要在 service 里写出 CRUD 操作。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">add(user) &#123;</span><br><span class="line">    <span class="built_in">this</span>.users.push(<span class="keyword">new</span> User(user));</span><br><span class="line">    <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  edit(id, userToEdit) &#123;</span><br><span class="line">    <span class="built_in">this</span>.users = <span class="built_in">this</span>.users.map(<span class="function"><span class="params">user</span> =&gt;</span></span><br><span class="line">      user.id === id</span><br><span class="line">        ? <span class="keyword">new</span> User(&#123;</span><br><span class="line">            ...user,</span><br><span class="line">            ...userToEdit</span><br><span class="line">          &#125;)</span><br><span class="line">        : user</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">delete</span>(_id) &#123;</span><br><span class="line">    <span class="built_in">this</span>.users = <span class="built_in">this</span>.users.filter(<span class="function">(<span class="params">&#123; id &#125;</span>) =&gt;</span> id !== _id);</span><br><span class="line">    <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  toggle(_id) &#123;</span><br><span class="line">    <span class="built_in">this</span>.users = <span class="built_in">this</span>.users.map(<span class="function"><span class="params">user</span> =&gt;</span></span><br><span class="line">      user.id === _id ? <span class="keyword">new</span> User(&#123; ...user, <span class="attr">complete</span>: !user.complete &#125;) : user</span><br><span class="line">    );</span><br><span class="line">    <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>此外还需定义 <code>commit</code>方法，用于数据库的存储操作。（本例使用 LocalStorage 作为数据库）。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">bindUserListChanged(callback) &#123;</span><br><span class="line">    <span class="built_in">this</span>.onUserListChanged = callback;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  _commit(users) &#123;</span><br><span class="line">    <span class="built_in">this</span>.onUserListChanged(users);</span><br><span class="line">    <span class="built_in">localStorage</span>.setItem(<span class="string">&#x27;users&#x27;</span>, <span class="built_in">JSON</span>.stringify(users));</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个方法调用了一个在创建 service 时就已经绑定的回调函数，详见<code>bindUserListChanged</code>方法。这个回调函数来自 view，负责更新展现的用户列表。</p>
+<p><code>user.service.js</code> 完整代码如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">**</span><br><span class="line"> * @<span class="class"><span class="keyword">class</span> <span class="title">Service</span></span></span><br><span class="line"><span class="class"> *</span></span><br><span class="line"><span class="class"> * <span class="title">Manages</span> <span class="title">the</span> <span class="title">data</span> <span class="title">of</span> <span class="title">the</span> <span class="title">application</span>.</span></span><br><span class="line"><span class="class"> */</span></span><br><span class="line"><span class="class"><span class="title">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">    <span class="keyword">constructor</span>() &#123;</span><br><span class="line">        <span class="keyword">const</span> users = <span class="built_in">JSON</span>.parse(<span class="built_in">localStorage</span>.getItem(<span class="string">&#x27;users&#x27;</span>)) || [];</span><br><span class="line">        <span class="built_in">this</span>.users = users.map(<span class="function"><span class="params">user</span> =&gt;</span> <span class="keyword">new</span> User(user));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    bindUserListChanged(callback) &#123;</span><br><span class="line">        <span class="built_in">this</span>.onUserListChanged = callback;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    _commit(users) &#123;</span><br><span class="line">        <span class="built_in">this</span>.onUserListChanged(users);</span><br><span class="line">        <span class="built_in">localStorage</span>.setItem(<span class="string">&#x27;users&#x27;</span>, <span class="built_in">JSON</span>.stringify(users));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    add(user) &#123;</span><br><span class="line">        <span class="built_in">this</span>.users.push(<span class="keyword">new</span> User(user));</span><br><span class="line">        <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    edit(id, userToEdit) &#123;</span><br><span class="line">        <span class="built_in">this</span>.users = <span class="built_in">this</span>.users.map(<span class="function"><span class="params">user</span> =&gt;</span></span><br><span class="line">            user.id === id</span><br><span class="line">                ? <span class="keyword">new</span> User(&#123;</span><br><span class="line">                    ...user,</span><br><span class="line">                    ...userToEdit</span><br><span class="line">                &#125;)</span><br><span class="line">                : user</span><br><span class="line">        );</span><br><span class="line">        <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">delete</span>(_id) &#123;</span><br><span class="line">        <span class="built_in">this</span>.users = <span class="built_in">this</span>.users.filter(<span class="function">(<span class="params">&#123; id &#125;</span>) =&gt;</span> id !== _id);</span><br><span class="line">        <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    toggle(_id) &#123;</span><br><span class="line">        <span class="built_in">this</span>.users = <span class="built_in">this</span>.users.map(<span class="function"><span class="params">user</span> =&gt;</span></span><br><span class="line">            user.id === _id ? <span class="keyword">new</span> User(&#123; ...user, <span class="attr">complete</span>: !user.complete &#125;) : user</span><br><span class="line">        );</span><br><span class="line">        <span class="built_in">this</span>._commit(<span class="built_in">this</span>.users);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>view 是 model 的可视化展现。本例动态创建整个 view，而不是像许多框架一样，创建 HTML 内容并插入。首先要做的是通过 DOM 方法缓存 view 中所有的变量。构造函数如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">constructor</span>() &#123;</span><br><span class="line">    <span class="built_in">this</span>.app = <span class="built_in">this</span>.getElement(<span class="string">&#x27;#root&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.form = <span class="built_in">this</span>.createElement(<span class="string">&#x27;form&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.createInput(&#123;</span><br><span class="line">      key: <span class="string">&#x27;inputName&#x27;</span>,</span><br><span class="line">      type: <span class="string">&#x27;text&#x27;</span>,</span><br><span class="line">      placeholder: <span class="string">&#x27;Name&#x27;</span>,</span><br><span class="line">      name: <span class="string">&#x27;name&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="built_in">this</span>.createInput(&#123;</span><br><span class="line">      key: <span class="string">&#x27;inputAge&#x27;</span>,</span><br><span class="line">      type: <span class="string">&#x27;text&#x27;</span>,</span><br><span class="line">      placeholder: <span class="string">&#x27;Age&#x27;</span>,</span><br><span class="line">      name: <span class="string">&#x27;age&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.submitButton = <span class="built_in">this</span>.createElement(<span class="string">&#x27;button&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.submitButton.textContent = <span class="string">&#x27;Submit&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.form.append(<span class="built_in">this</span>.inputName, <span class="built_in">this</span>.inputAge, <span class="built_in">this</span>.submitButton);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.title = <span class="built_in">this</span>.createElement(<span class="string">&#x27;h1&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.title.textContent = <span class="string">&#x27;Users&#x27;</span>;</span><br><span class="line">    <span class="built_in">this</span>.userList = <span class="built_in">this</span>.createElement(<span class="string">&#x27;ul&#x27;</span>, <span class="string">&#x27;user-list&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.app.append(<span class="built_in">this</span>.title, <span class="built_in">this</span>.form, <span class="built_in">this</span>.userList);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>._temporaryAgeText = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">    <span class="built_in">this</span>._initLocalListeners();</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于 view 最为重要的在于，view 与 service 中方法的“并联”。例如，<code>bindAddUser</code>方法接收一个“driver”函数作为参数，该参数将执行 service 中描述的<code>addUser</code>操作。</p>
+<p>在<code>bindXXX</code>这些方法中，view “控件(controls)”的每个<code>EventListener</code>被定义。注意，从 view 中，我们可以通过 handler 函数，获取所有展示“用户”的数据。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">bindAddUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.form.addEventListener(<span class="string">&#x27;submit&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      event.preventDefault();</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (<span class="built_in">this</span>._nameText) &#123;</span><br><span class="line">        handler(&#123;</span><br><span class="line">          name: <span class="built_in">this</span>._nameText,</span><br><span class="line">          age: <span class="built_in">this</span>._ageText</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="built_in">this</span>._resetInput();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  bindDeleteUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.userList.addEventListener(<span class="string">&#x27;click&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (event.target.className === <span class="string">&#x27;delete&#x27;</span>) &#123;</span><br><span class="line">        <span class="keyword">const</span> id = event.target.parentElement.id;</span><br><span class="line"></span><br><span class="line">        handler(id);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  bindEditUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.userList.addEventListener(<span class="string">&#x27;focusout&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (<span class="built_in">this</span>._temporaryAgeText) &#123;</span><br><span class="line">        <span class="keyword">const</span> id = event.target.parentElement.id;</span><br><span class="line">        <span class="keyword">const</span> key = <span class="string">&#x27;age&#x27;</span>;</span><br><span class="line"></span><br><span class="line">        handler(id, &#123; [key]: <span class="built_in">this</span>._temporaryAgeText &#125;);</span><br><span class="line">        <span class="built_in">this</span>._temporaryAgeText = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  bindToggleUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.userList.addEventListener(<span class="string">&#x27;change&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (event.target.type === <span class="string">&#x27;checkbox&#x27;</span>) &#123;</span><br><span class="line">        <span class="keyword">const</span> id = event.target.parentElement.id;</span><br><span class="line"></span><br><span class="line">        handler(id);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>view 中的其余代码用于处理 DOM。</p>
+<p>全部代码如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@class <span class="variable">View</span></span></span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Visual representation of the model.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">UserView</span> </span>&#123;</span><br><span class="line">  <span class="keyword">constructor</span>() &#123;</span><br><span class="line">    <span class="built_in">this</span>.app = <span class="built_in">this</span>.getElement(<span class="string">&#x27;#root&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.form = <span class="built_in">this</span>.createElement(<span class="string">&#x27;form&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.createInput(&#123;</span><br><span class="line">      key: <span class="string">&#x27;inputName&#x27;</span>,</span><br><span class="line">      type: <span class="string">&#x27;text&#x27;</span>,</span><br><span class="line">      placeholder: <span class="string">&#x27;Name&#x27;</span>,</span><br><span class="line">      name: <span class="string">&#x27;name&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="built_in">this</span>.createInput(&#123;</span><br><span class="line">      key: <span class="string">&#x27;inputAge&#x27;</span>,</span><br><span class="line">      type: <span class="string">&#x27;text&#x27;</span>,</span><br><span class="line">      placeholder: <span class="string">&#x27;Age&#x27;</span>,</span><br><span class="line">      name: <span class="string">&#x27;age&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.submitButton = <span class="built_in">this</span>.createElement(<span class="string">&#x27;button&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.submitButton.textContent = <span class="string">&#x27;Submit&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.form.append(<span class="built_in">this</span>.inputName, <span class="built_in">this</span>.inputAge, <span class="built_in">this</span>.submitButton);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.title = <span class="built_in">this</span>.createElement(<span class="string">&#x27;h1&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.title.textContent = <span class="string">&#x27;Users&#x27;</span>;</span><br><span class="line">    <span class="built_in">this</span>.userList = <span class="built_in">this</span>.createElement(<span class="string">&#x27;ul&#x27;</span>, <span class="string">&#x27;user-list&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>.app.append(<span class="built_in">this</span>.title, <span class="built_in">this</span>.form, <span class="built_in">this</span>.userList);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>._temporaryAgeText = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">    <span class="built_in">this</span>._initLocalListeners();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">get</span> <span class="title">_nameText</span>() &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>.inputName.value;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">get</span> <span class="title">_ageText</span>() &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>.inputAge.value;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  _resetInput() &#123;</span><br><span class="line">    <span class="built_in">this</span>.inputName.value = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">    <span class="built_in">this</span>.inputAge.value = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  createInput(</span><br><span class="line">    &#123; key, type, placeholder, name &#125; = &#123;</span><br><span class="line">      key: <span class="string">&#x27;default&#x27;</span>,</span><br><span class="line">      type: <span class="string">&#x27;text&#x27;</span>,</span><br><span class="line">      placeholder: <span class="string">&#x27;default&#x27;</span>,</span><br><span class="line">      name: <span class="string">&#x27;default&#x27;</span></span><br><span class="line">    &#125;</span><br><span class="line">  ) &#123;</span><br><span class="line">    <span class="built_in">this</span>[key] = <span class="built_in">this</span>.createElement(<span class="string">&#x27;input&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>[key].type = type;</span><br><span class="line">    <span class="built_in">this</span>[key].placeholder = placeholder;</span><br><span class="line">    <span class="built_in">this</span>[key].name = name;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  createElement(tag, className) &#123;</span><br><span class="line">    <span class="keyword">const</span> element = <span class="built_in">document</span>.createElement(tag);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (className) element.classList.add(className);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> element;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  getElement(selector) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">document</span>.querySelector(selector);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  displayUsers(users) &#123;</span><br><span class="line">    <span class="comment">// Delete all nodes</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="built_in">this</span>.userList.firstChild) &#123;</span><br><span class="line">      <span class="built_in">this</span>.userList.removeChild(<span class="built_in">this</span>.userList.firstChild);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Show default message</span></span><br><span class="line">    <span class="keyword">if</span> (users.length === <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> p = <span class="built_in">this</span>.createElement(<span class="string">&#x27;p&#x27;</span>);</span><br><span class="line">      p.textContent = <span class="string">&#x27;Nothing to do! Add a user?&#x27;</span>;</span><br><span class="line">      <span class="built_in">this</span>.userList.append(p);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Create nodes</span></span><br><span class="line">      users.forEach(<span class="function"><span class="params">user</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> li = <span class="built_in">this</span>.createElement(<span class="string">&#x27;li&#x27;</span>);</span><br><span class="line">        li.id = user.id;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">const</span> checkbox = <span class="built_in">this</span>.createElement(<span class="string">&#x27;input&#x27;</span>);</span><br><span class="line">        checkbox.type = <span class="string">&#x27;checkbox&#x27;</span>;</span><br><span class="line">        checkbox.checked = user.complete;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">const</span> spanUser = <span class="built_in">this</span>.createElement(<span class="string">&#x27;span&#x27;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">const</span> spanAge = <span class="built_in">this</span>.createElement(<span class="string">&#x27;span&#x27;</span>);</span><br><span class="line">        spanAge.contentEditable = <span class="literal">true</span>;</span><br><span class="line">        spanAge.classList.add(<span class="string">&#x27;editable&#x27;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (user.complete) &#123;</span><br><span class="line">          <span class="keyword">const</span> strikeName = <span class="built_in">this</span>.createElement(<span class="string">&#x27;s&#x27;</span>);</span><br><span class="line">          strikeName.textContent = user.name;</span><br><span class="line">          spanUser.append(strikeName);</span><br><span class="line"></span><br><span class="line">          <span class="keyword">const</span> strikeAge = <span class="built_in">this</span>.createElement(<span class="string">&#x27;s&#x27;</span>);</span><br><span class="line">          strikeAge.textContent = user.age;</span><br><span class="line">          spanAge.append(strikeAge);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          spanUser.textContent = user.name;</span><br><span class="line">          spanAge.textContent = user.age;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">const</span> deleteButton = <span class="built_in">this</span>.createElement(<span class="string">&#x27;button&#x27;</span>, <span class="string">&#x27;delete&#x27;</span>);</span><br><span class="line">        deleteButton.textContent = <span class="string">&#x27;Delete&#x27;</span>;</span><br><span class="line">        li.append(checkbox, spanUser, spanAge, deleteButton);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Append nodes</span></span><br><span class="line">        <span class="built_in">this</span>.userList.append(li);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  _initLocalListeners() &#123;</span><br><span class="line">    <span class="built_in">this</span>.userList.addEventListener(<span class="string">&#x27;input&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (event.target.className === <span class="string">&#x27;editable&#x27;</span>) &#123;</span><br><span class="line">        <span class="built_in">this</span>._temporaryAgeText = event.target.innerText;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  bindAddUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.form.addEventListener(<span class="string">&#x27;submit&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      event.preventDefault();</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (<span class="built_in">this</span>._nameText) &#123;</span><br><span class="line">        handler(&#123;</span><br><span class="line">          name: <span class="built_in">this</span>._nameText,</span><br><span class="line">          age: <span class="built_in">this</span>._ageText</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="built_in">this</span>._resetInput();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  bindDeleteUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.userList.addEventListener(<span class="string">&#x27;click&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (event.target.className === <span class="string">&#x27;delete&#x27;</span>) &#123;</span><br><span class="line">        <span class="keyword">const</span> id = event.target.parentElement.id;</span><br><span class="line"></span><br><span class="line">        handler(id);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  bindEditUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.userList.addEventListener(<span class="string">&#x27;focusout&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (<span class="built_in">this</span>._temporaryAgeText) &#123;</span><br><span class="line">        <span class="keyword">const</span> id = event.target.parentElement.id;</span><br><span class="line">        <span class="keyword">const</span> key = <span class="string">&#x27;age&#x27;</span>;</span><br><span class="line"></span><br><span class="line">        handler(id, &#123; [key]: <span class="built_in">this</span>._temporaryAgeText &#125;);</span><br><span class="line">        <span class="built_in">this</span>._temporaryAgeText = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  bindToggleUser(handler) &#123;</span><br><span class="line">    <span class="built_in">this</span>.userList.addEventListener(<span class="string">&#x27;change&#x27;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (event.target.type === <span class="string">&#x27;checkbox&#x27;</span>) &#123;</span><br><span class="line">        <span class="keyword">const</span> id = event.target.parentElement.id;</span><br><span class="line"></span><br><span class="line">        handler(id);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="ControllerS"><a href="#ControllerS" class="headerlink" title="ControllerS"></a>ControllerS</h1><p>controller 通过“依赖注入”（dependency injection DI）的方式，接收 service 和 view 两份依赖。这些依赖存储在 controller 的私有变量中。</p>
+<p>此外，因为 controller 是唯一可以同时访问二者的，所以其构造函数在 view 和 services 之间建立了显式连接。</p>
+<p><code>user.controller.js</code>所有代码如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@class <span class="variable">Controller</span></span></span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Links the user input and the view output.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param <span class="variable">model</span></span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param <span class="variable">view</span></span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">  <span class="keyword">constructor</span>(userService, userView) &#123;</span><br><span class="line">    <span class="built_in">this</span>.userService = userService;</span><br><span class="line">    <span class="built_in">this</span>.userView = userView;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Explicit this binding</span></span><br><span class="line">    <span class="built_in">this</span>.userService.bindUserListChanged(<span class="built_in">this</span>.onUserListChanged);</span><br><span class="line">    <span class="built_in">this</span>.userView.bindAddUser(<span class="built_in">this</span>.handleAddUser);</span><br><span class="line">    <span class="built_in">this</span>.userView.bindEditUser(<span class="built_in">this</span>.handleEditUser);</span><br><span class="line">    <span class="built_in">this</span>.userView.bindDeleteUser(<span class="built_in">this</span>.handleDeleteUser);</span><br><span class="line">    <span class="built_in">this</span>.userView.bindToggleUser(<span class="built_in">this</span>.handleToggleUser);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Display initial users</span></span><br><span class="line">    <span class="built_in">this</span>.onUserListChanged(<span class="built_in">this</span>.userService.users);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  onUserListChanged = <span class="function"><span class="params">users</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.userView.displayUsers(users);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  handleAddUser = <span class="function"><span class="params">user</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.userService.add(user);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  handleEditUser = <span class="function">(<span class="params">id, user</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.userService.edit(id, user);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  handleDeleteUser = <span class="function"><span class="params">id</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.userService.delete(id);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  handleToggleUser = <span class="function"><span class="params">id</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.userService.toggle(id);</span><br><span class="line">  &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后是应用的启动器，app.js。应用通过 UserService、UserView 和 UserController 的创建来执行。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> app = <span class="keyword">new</span> UserController(<span class="keyword">new</span> UserService(), <span class="keyword">new</span> UserView());</span><br></pre></td></tr></table></figure>
+
+<p><strong>总结：</strong></p>
+<p>此篇文章中，我们开发了一个遵循 MVC 架构的 web 应用。该应用使用“贫血模型(anemic models)”，主要逻辑在 services 中。</p>
+<p>有必要强调，这篇文章的学习目标是理解项目不同文件、不同功能的结构，以及 view 如何完全独立于 model/service 和 controller。</p>
+<p>在下面的文章中，我们会使用 TypeScript 增强 JS，这将会使得 JS 更强大。</p>
+<p>此外，原生 JS 的使用导致了许多重复代码来操作 DOM，使用 Angular 框架将会避免这些冗余。</p>
+<h1 id="译注"><a href="#译注" class="headerlink" title="译注"></a>译注</h1><h2 id="译注-1"><a href="#译注-1" class="headerlink" title="译注"></a>译注</h2><p><sup>1</sup> Anemic，贫血模型 ， 对象只单纯持有数据，没有函数，函数定义在另外的地方。可以参看 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Anemic_domain_model">WiKi</a> 或者 <a target="_blank" rel="noopener" href="https://martinfowler.com/bliki/AnemicDomainModel.html">Martin Fowler</a> 的文章。（PS：我没看过。）</p>
+<p><sup>2</sup>这里原文是“This is because <code>LocalStorage</code> only stores data and not prototypes of stored data. ”，想不出贴切翻译，就按照自己的意思来了。此外，后面还有一句“The same happens with the data that travels from the back end to the front end: They do not have their classes instantiated.”，我省略了。</p>
+<p><sup>3</sup> 这里原文是：“Note that we have defined a class variable called <code>users</code> that stores all users once they have been transformed from a flat object to a prototyped object of the <code>User</code> class.”</p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>可以对比<a target="_blank" rel="noopener" href="http://todomvc.com/"> ToDoMVC </a> 这一项目中的 <a hre="http://todomvc.com/examples/vanilla-es6"> Vanilla ES6</a>，观察其中共同点和差异，来加深理解。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>月海
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fate.cafe/2020/11/02/%E7%90%86%E8%A7%A3%E5%89%8D%E7%AB%AF-MVC%EF%BC%9A%E5%8E%9F%E7%94%9F-JS/" title="理解前端 MVC：原生 JS">https://fate.cafe/2020/11/02/理解前端-MVC：原生-JS/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag"># 前端</a>
+              <a href="/tags/MVC/" rel="tag"># MVC</a>
+              <a href="/tags/%E7%BF%BB%E8%AF%91/" rel="tag"># 翻译</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/10/17/%E4%BC%97%E7%94%9F%E4%B9%8B%E6%9F%B1/" rel="prev" title="众生之柱">
+      <i class="fa fa-chevron-left"></i> 众生之柱
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">项目结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Models"><span class="nav-number">3.</span> <span class="nav-text">Models</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Models-1"><span class="nav-number">3.1.</span> <span class="nav-text">Models</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Services"><span class="nav-number">3.2.</span> <span class="nav-text">Services</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ControllerS"><span class="nav-number">4.</span> <span class="nav-text">ControllerS</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%91%E6%B3%A8"><span class="nav-number">5.</span> <span class="nav-text">译注</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%91%E6%B3%A8-1"><span class="nav-number">5.1.</span> <span class="nav-text">译注</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A5%E5%85%85"><span class="nav-number">5.2.</span> <span class="nav-text">补充</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">月海</p>
+  <div class="site-description" itemprop="description">星斗绕河汉，诸命已定盘</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">月海</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://fate-cafe.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://fate.cafe/2020/11/02/%E7%90%86%E8%A7%A3%E5%89%8D%E7%AB%AF-MVC%EF%BC%9A%E5%8E%9F%E7%94%9F-JS/";
+    this.page.identifier = "2020/11/02/理解前端-MVC：原生-JS/";
+    this.page.title = "理解前端 MVC：原生 JS";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://fate-cafe.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+</body>
+</html>
