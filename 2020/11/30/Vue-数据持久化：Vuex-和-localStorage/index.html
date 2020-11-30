@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fate.cafe","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="原文：How to permanently save data with Vuex &amp; localStorage in your Vue app 作者：Axel Wittmann 在 Vue 应用中增加了些许模板（templates）及复杂度后，一个问题再度出现：如何在模板间存留数据，以及在用户刷新页面后如何保存这些数据？ 这篇教程将展示如何使用 Vuex 在模板间进行无刷新的（none-">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Vue 数据持久化：Vuex 和 localStorage">
+<meta property="og:url" content="https://fate.cafe/2020/11/30/Vue-%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96%EF%BC%9AVuex-%E5%92%8C-localStorage/index.html">
+<meta property="og:site_name" content="月海">
+<meta property="og:description" content="原文：How to permanently save data with Vuex &amp; localStorage in your Vue app 作者：Axel Wittmann 在 Vue 应用中增加了些许模板（templates）及复杂度后，一个问题再度出现：如何在模板间存留数据，以及在用户刷新页面后如何保存这些数据？ 这篇教程将展示如何使用 Vuex 在模板间进行无刷新的（none-">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-11-30T15:53:05.000Z">
+<meta property="article:modified_time" content="2020-11-30T16:04:15.822Z">
+<meta property="article:author" content="月海">
+<meta property="article:tag" content="前端">
+<meta property="article:tag" content="翻译">
+<meta property="article:tag" content="JavaScript">
+<meta property="article:tag" content="Vue">
+<meta property="article:tag" content="Vuex">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fate.cafe/2020/11/30/Vue-%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96%EF%BC%9AVuex-%E5%92%8C-localStorage/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Vue 数据持久化：Vuex 和 localStorage | 月海</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">月海</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">天穹似深海，明月出其间</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fate.cafe/2020/11/30/Vue-%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96%EF%BC%9AVuex-%E5%92%8C-localStorage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="月海">
+      <meta itemprop="description" content="星斗绕河汉，诸命已定盘">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="月海">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Vue 数据持久化：Vuex 和 localStorage
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-11-30 23:53:05" itemprop="dateCreated datePublished" datetime="2020-11-30T23:53:05+08:00">2020-11-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-12-01 00:04:15" itemprop="dateModified" datetime="2020-12-01T00:04:15+08:00">2020-12-01</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/11/30/Vue-%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96%EF%BC%9AVuex-%E5%92%8C-localStorage/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/11/30/Vue-数据持久化：Vuex-和-localStorage/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>原文：<a target="_blank" rel="noopener" href="https://medium.com/js-dojo/how-to-permanently-save-data-with-vuex-localstorage-in-your-vue-app-f1d5c140db69">How to permanently save data with Vuex &amp; localStorage in your Vue app</a></p>
+<p>作者：<a target="_blank" rel="noopener" href="https://medium.com/@axelcwittmann?source=post_page-----f1d5c140db69--------------------------------">Axel Wittmann</a></p>
+<p>在 Vue 应用中增加了些许模板（templates）及复杂度后，一个问题再度出现：如何在模板间存留数据，以及在用户刷新页面后如何保存这些数据？</p>
+<p>这篇教程将展示如何使用 Vuex 在模板间进行无刷新的（none-refreshable）数据存储，以及如何使用 localStorage 配合 Vuex 实现刷新仍保存数据。</p>
+<p>这篇文章基于为 <a href="">Epiloge</a> （一个基于 Vue 的让你连接感兴趣领域以及展现工作项目的应用）而写的代码。</p>
+<a id="more"></a>
+
+<h1 id="什么是-Vuex？"><a href="#什么是-Vuex？" class="headerlink" title="什么是 Vuex？"></a>什么是 Vuex？</h1><p>如果你刚刚接触 Vue.js，可能还没用过 <a target="_blank" rel="noopener" href="https://vuex.vuejs.org/zh/">Vuex</a>。 这是一个针对 Vue 中的 “store” 而必须的插件。</p>
+<p>Store 或状态管理，仅仅是一个术语，意思是将某些变量保存，这样用户点击不同路由，也仍然可以使用那些变量。</p>
+<p>换句话说，Vuex 帮你在兄弟组件间（components）共享数据。</p>
+<p>假设现在有两个组件，一个是“用户列表”，列出了关注的人；另一个用来显示单个用户的资料。</p>
+<p>如果点击列表中某个用户并查看其资料，然后点击返回，使用者并不希望列表再次刷新。</p>
+<p>这样可能会惹恼用户，并且让他们觉得这个应用有 bug。尤其是已经向下滚动了列表，只想看 2~3 个不同的用户，但是由于缺少数据持久存储，每次用户点击返回，关注列表都会刷新并且回到顶部。</p>
+<p>所以，要是你还没用过 Vuex，下面我们一起看看怎么把它集成到 Vue 应用中。</p>
+<p>首先安装 vuex：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install vuex--save</span><br></pre></td></tr></table></figure>
+
+<p>然后新建 store 文件夹，创建 store.js，在其中导入 Vue 和 Vuex，并注册 Vuex。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> Vue <span class="keyword">from</span> <span class="string">&quot;vue&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> Vuex <span class="keyword">from</span> <span class="string">&quot;vuex&quot;</span>;</span><br><span class="line"></span><br><span class="line">Vue.use(Vuex);</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="keyword">new</span> Vuex.Store(&#123;</span><br><span class="line">    <span class="comment">//code to come</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>接着在入口（main.js 或 index.js）中的 Vue 实例上导入并包含 store。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line"><span class="keyword">import</span> store <span class="keyword">from</span> <span class="string">&quot;./store/store&quot;</span>;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">new</span> Vue(&#123;</span><br><span class="line">    el: <span class="string">&#x27;#app&#x27;</span>,</span><br><span class="line">    router,</span><br><span class="line">    components: &#123; App &#125;,</span><br><span class="line">    store: store,</span><br><span class="line">    template: <span class="string">&#x27;&lt;App/&gt;&#x27;</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>此时 vuex store 已经可以用于在模板间持久留存数据了。</p>
+<h1 id="使用-Vuex-保存一个用户列表"><a href="#使用-Vuex-保存一个用户列表" class="headerlink" title="使用 Vuex 保存一个用户列表"></a>使用 Vuex 保存一个用户列表</h1><p>解决上文提到的问题，可以使用 Vuex 在 store 中直接存储用户列表数据。当用户点击返回时再度获取存储的列表即可。</p>
+<p>让我们为用户列表定义一个变量，以及一个设置（set）列表数据的方法。这两者都会在展示用户列表的组件中用到。</p>
+<p>例如在 Epiloge 中，我们在 Vuex store 中使用 <code>savedSingleUserConnections</code> 存储了用于展现用户关系的列表：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在 store.js 中增加了一个 state 和 mutations</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="keyword">new</span> Vuex.Store(&#123;</span><br><span class="line">    state: &#123;</span><br><span class="line">        savedSingleUserConnections: &#123;&#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    mutations: &#123;</span><br><span class="line">        saveSingleUserConnections: <span class="function">(<span class="params">state, connections</span>) =&gt;</span> &#123; state.savedSingleUserConnections = connections; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码，在 store 中写了一个叫“mutation”的方法。该方法将 connections 分配给 state，并且可以操作持久化的 state 变量 <code>savedSingleUserConnections</code>。</p>
+<p>展示用户关系（user connections）的组件，可以命名为 <code>userConnections.vue</code>。</p>
+<p>在此单文件中，你可以获取 <code>savedSingleUserConnections</code> 或者将其提交（commit）到 store。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&lt;template&gt;</span><br><span class="line">  &lt;!--all the html/subcomponents you need to display your list --&gt;</span><br><span class="line">&lt;/template&gt;</span><br><span class="line">&lt;script&gt;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> &#123;</span><br><span class="line">  data: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">      userConnections: &#123;&#125;,</span><br><span class="line">    &#125;;</span><br><span class="line">  &#125;,</span><br><span class="line">  created: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">this</span>.getUserConnections();</span><br><span class="line">  &#125;,</span><br><span class="line">  methods: &#123;</span><br><span class="line">    getUserConnections: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">      <span class="keyword">const</span> savedConnections = <span class="built_in">this</span>.$store.state.savedSingleUserConnections;</span><br><span class="line">      <span class="keyword">if</span> (savedConnections) &#123;</span><br><span class="line">        <span class="built_in">this</span>.userConnections = savedConnections;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 从 API 中获取 connection，一旦得到数据，将其提交保存</span></span><br><span class="line">        <span class="built_in">this</span>.$store.commit(<span class="string">&quot;saveSingleUserConnections&quot;</span>, <span class="built_in">this</span>.userConnections);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这是一种直截了当的方法，来获取和保存 Vuex 中存储的变量。<code>getUserConnections</code> 方法一开始会检查是否在 store 中的 <code>savedSingleUserConnections</code> 下保存数据。通过 <code>this.$store</code> 来获取 store 下面已经保存的数据。</p>
+<p>如果存了数据，会使用 <code>this.userConnections</code> 并且在模板展示其中的数据。</p>
+<p>在 store 没有保存任何数据的情况下，我们从 API 获取数据并分配给 <code>this.userConnections</code> 然后存储在 Vuex store 中。</p>
+<p>要记住的是我们无法直接通过 <code>this.$store.state</code> 操作数据，而只能使用 mutation 方法。也就是说，用 <code>this.$store.commit</code> 来操作数据。</p>
+<h1 id="在-Vuex-store-中使用-localStorage"><a href="#在-Vuex-store-中使用-localStorage" class="headerlink" title="在 Vuex store 中使用 localStorage"></a>在 Vuex store 中使用 localStorage</h1><h2 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h2><p>localStorage 作为浏览器 API，可以完全独立于 Vuex。</p>
+<p>不过，如果你使用 Vuex 作为应用的数据存储，那么结合使用长效存储（例如刷新但保存数据）及短效（short-term）存储（例如无刷新路由间跳转的数据保留）是很有意义的。</p>
+<p>为什么我们不希望在刷新后持久保存所有数据？因为这样做的话，用户最终将得到大量旧数据。</p>
+<p>例如用户对文章进行评论，评论发表后页面刷新的预期结果应该是清空刚才填写的表单。</p>
+<p>当然，对于用户登录数据是相反的。在用户登录后，刷新页面就清除信息，用户将会被登出。这并不是好的体验。</p>
+<h2 id="使用-localStorage-存储用户对隐私策略的选择"><a href="#使用-localStorage-存储用户对隐私策略的选择" class="headerlink" title="使用 localStorage 存储用户对隐私策略的选择"></a>使用 localStorage 存储用户对隐私策略的选择</h2><p>localStorage 和 Vuex 协作的最直接例子是保存一个布尔值。例如第一次访问页面时，保存用户对隐私及 cookie 政策的勾选。</p>
+<p>没人想在访问网站或刷新页面时，每次都弹出相同的 cookies 和隐私提示。</p>
+<p>可以在 store.js 中为隐私政策添加 state 和 mutation。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="keyword">new</span> Vuex.Store(&#123;</span><br><span class="line">  state: &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    agreedToPrivacy: <span class="literal">false</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">  mutations: &#123;</span><br><span class="line">    agreePrivacyPolicy(state) &#123;</span><br><span class="line">      <span class="built_in">localStorage</span>.setItem(<span class="string">&quot;agreedToPrivacy&quot;</span>, <span class="literal">true</span>);</span><br><span class="line">      state.agreedToPrivacy = <span class="literal">true</span>;</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>当用户点击隐私和 cookie 政策的“Agree”时，你可以调用 <code>aggrePrivacyPolicy</code> mutation。</p>
+<p>使用 localStorage 则可以保证数据在本地的持续存储。</p>
+<p>当然，还没完。</p>
+<p>当用户刷新时，在 store 中 state 下的 <code>agreedToPrivacy</code> 将会重新变成 false。</p>
+<p>解决办法是提供一个 <code>initialiseStore</code> 方法，页面刷新后，在 App 入口文件进行重新赋值。</p>
+<p>这个方法在beforeCreate() 钩子函数中调用。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> Vue(&#123;</span><br><span class="line">  el: <span class="string">&quot;#app&quot;</span>,</span><br><span class="line">  router,</span><br><span class="line">  components: &#123; App &#125;,</span><br><span class="line">  store: store,</span><br><span class="line">  beforeCreate() &#123;</span><br><span class="line">    <span class="built_in">this</span>.$store.commit(<span class="string">&quot;initialiseStore&quot;</span>);</span><br><span class="line">  &#125;,</span><br><span class="line">  template: <span class="string">&quot;&lt;App/&gt;&quot;</span>,</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>此外，在 store.js 中，需要为 <code>initialseStore</code> 添加一个 mutation。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">privacy policy</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="keyword">new</span> Vuex.Store(&#123;</span><br><span class="line">  state: &#123;</span><br><span class="line">    ...</span><br><span class="line">    agreedToPrivacy: <span class="literal">false</span></span><br><span class="line">  &#125;, </span><br><span class="line">  mutations: &#123;</span><br><span class="line">    initialiseStore(state) &#123;</span><br><span class="line">      ...</span><br><span class="line">      <span class="keyword">if</span> (<span class="built_in">localStorage</span>.getItem(<span class="string">&#x27;agreedToPrivacy&#x27;</span>)) &#123;</span><br><span class="line">        state.agreedToPrivacy = <span class="literal">true</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>以上就是 Vuex 和 localStorage。</p>
+<p>你可以在此基础上继续扩展，包含更加复杂的数据存储，例如用户对象（user-object）存储，甚至存储整个页面展示的数据。</p>
+<p>有必要提醒，localStorage 有其上限<sup>1</sup>。所以为许多页面存储大量数据并不可行。</p>
+<h1 id="译注"><a href="#译注" class="headerlink" title="译注"></a>译注</h1><p><sup>1</sup> 5M 左右，不同浏览器可能有所差异。</p>
+<p>PS：这篇文章的优点在于提供了 localStorage 和 Vuex 的一些应用场景，缺点则是太过基础。当然对于从未接触过 Vuex 和 localStorage 的人，这倒是优点。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>月海
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fate.cafe/2020/11/30/Vue-%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96%EF%BC%9AVuex-%E5%92%8C-localStorage/" title="Vue 数据持久化：Vuex 和 localStorage">https://fate.cafe/2020/11/30/Vue-数据持久化：Vuex-和-localStorage/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag"># 前端</a>
+              <a href="/tags/%E7%BF%BB%E8%AF%91/" rel="tag"># 翻译</a>
+              <a href="/tags/JavaScript/" rel="tag"># JavaScript</a>
+              <a href="/tags/Vue/" rel="tag"># Vue</a>
+              <a href="/tags/Vuex/" rel="tag"># Vuex</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/11/27/JS-%E6%80%A7%E8%83%BD%E8%A1%A8%E7%8E%B0%EF%BC%9AArray-filter-VS-Array-slice/" rel="prev" title="JS 性能表现：Array.filter() VS Array.slice()">
+      <i class="fa fa-chevron-left"></i> JS 性能表现：Array.filter() VS Array.slice()
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Vuex%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">什么是 Vuex？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Vuex-%E4%BF%9D%E5%AD%98%E4%B8%80%E4%B8%AA%E7%94%A8%E6%88%B7%E5%88%97%E8%A1%A8"><span class="nav-number">2.</span> <span class="nav-text">使用 Vuex 保存一个用户列表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8-Vuex-store-%E4%B8%AD%E4%BD%BF%E7%94%A8-localStorage"><span class="nav-number">3.</span> <span class="nav-text">在 Vuex store 中使用 localStorage</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">3.1.</span> <span class="nav-text">应用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-localStorage-%E5%AD%98%E5%82%A8%E7%94%A8%E6%88%B7%E5%AF%B9%E9%9A%90%E7%A7%81%E7%AD%96%E7%95%A5%E7%9A%84%E9%80%89%E6%8B%A9"><span class="nav-number">3.2.</span> <span class="nav-text">使用 localStorage 存储用户对隐私策略的选择</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%91%E6%B3%A8"><span class="nav-number">4.</span> <span class="nav-text">译注</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">月海</p>
+  <div class="site-description" itemprop="description">星斗绕河汉，诸命已定盘</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">月海</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://fate-cafe.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://fate.cafe/2020/11/30/Vue-%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96%EF%BC%9AVuex-%E5%92%8C-localStorage/";
+    this.page.identifier = "2020/11/30/Vue-数据持久化：Vuex-和-localStorage/";
+    this.page.title = "Vue 数据持久化：Vuex 和 localStorage";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://fate-cafe.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+</body>
+</html>
